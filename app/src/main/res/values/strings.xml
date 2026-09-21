@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">StyleSphere</string>
+    <string name="app_full_name">StyleSphere Management</string>
+    <string name="app_subtitle">Business Management &amp; Finance</string>
+    <string name="brand_name">StyleSphere</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_transactions">Transactions</string>
+    <string name="nav_orders">Orders</string>
+    <string name="nav_reports">Reports</string>
+    <string name="nav_more">More</string>
+
+    <!-- Quick Actions -->
+    <string name="action_add_income">Add Income</string>
+    <string name="action_add_expense">Add Expense</string>
+    <string name="action_add_transfer">Transfer</string>
+    <string name="action_add_order">Add Order</string>
+
+    <!-- Financial Stats -->
+    <string name="stat_today_income">Today\'s Income</string>
+    <string name="stat_today_expense">Today\'s Expense</string>
+    <string name="stat_today_profit">Today\'s Profit</string>
+    <string name="stat_today_orders">Today\'s Orders</string>
+    <string name="stat_total_balance">Total Balance</string>
+
+    <!-- Currency and Formats -->
+    <string name="currency_symbol">৳</string>
+    <string name="currency_code">BDT</string>
+
+    <!-- General -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="filter">Filter</string>
+    <string name="search">Search</string>
+    <string name="export">Export</string>
+    <string name="share">Share</string>
+    <string name="view_all">View All</string>
+</resources>

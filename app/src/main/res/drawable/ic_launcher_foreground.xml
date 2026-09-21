@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer Glow Circle Ring -->
+    <path
+        android:pathData="M54,26 A28,28 0 1,1 53.9,26"
+        android:strokeWidth="2.5"
+        android:strokeColor="#2DD4BF"
+        android:fillColor="#00000000" />
+    <!-- Sphere Orbit Ring (StyleSphere) -->
+    <path
+        android:pathData="M32,45 C38,36 70,36 76,45 C82,54 78,66 70,72 C62,78 40,78 34,70"
+        android:strokeWidth="3.5"
+        android:strokeColor="#38BDF8"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <!-- Financial Growth Bars / Center Modern S Vault -->
+    <!-- Bar 1 -->
+    <path
+        android:pathData="M43,62 L43,54 A2,2 0 0,1 47,54 L47,62 A2,2 0 0,1 43,62 Z"
+        android:fillColor="#06B6D4" />
+    <!-- Bar 2 -->
+    <path
+        android:pathData="M52,62 L52,46 A2,2 0 0,1 56,46 L56,62 A2,2 0 0,1 52,62 Z"
+        android:fillColor="#10B981" />
+    <!-- Bar 3 -->
+    <path
+        android:pathData="M61,62 L61,39 A2,2 0 0,1 65,39 L65,62 A2,2 0 0,1 61,62 Z"
+        android:fillColor="#F59E0B" />
+    <!-- Rising Trend Arrow -->
+    <path
+        android:pathData="M40,52 L50,44 L57,48 L68,36"
+        android:strokeWidth="2.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M64,36 L68,36 L68,40"
+        android:strokeWidth="2.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+</vector>

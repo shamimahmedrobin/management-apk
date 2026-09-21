@@ -1,0 +1,8 @@
+{
+  "name": "StyleSphere",
+  "description": "Modern business management & finance app for StyleSphere e-commerce operations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
