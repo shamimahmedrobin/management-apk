@@ -1,6 +1,6 @@
 {
-  "name": "StyleSphere",
-  "description": "Modern business management & finance app for StyleSphere e-commerce operations.",
+  "name": "Business Management",
+  "description": "Universal Business Management & Finance application for any business or retail operations.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

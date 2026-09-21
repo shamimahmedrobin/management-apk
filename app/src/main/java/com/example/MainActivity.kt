@@ -106,7 +106,7 @@ fun StyleSphereMainApp(
                                 contentDescription = destination.title
                             )
                         },
-                        label = { Text(destination.title) }
+                        alwaysShowLabel = false
                     )
                 }
             }

@@ -57,7 +57,7 @@ fun PinLockScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "StyleSphere Management",
+                    text = "Business Management",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )

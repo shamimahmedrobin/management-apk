@@ -54,6 +54,13 @@ class StyleSphereViewModel @JvmOverloads constructor(
     private val _themeSetting = MutableStateFlow(AppThemeSetting.SYSTEM)
     val themeSetting: StateFlow<AppThemeSetting> = _themeSetting.asStateFlow()
 
+    private val _uiMessage = MutableStateFlow<String?>(null)
+    val uiMessage: StateFlow<String?> = _uiMessage.asStateFlow()
+
+    fun clearUiMessage() {
+        _uiMessage.value = null
+    }
+
     init {
         // Initialize SecurityManager with Application context for PIN persistence
         SecurityManager.init(application)
@@ -486,7 +493,7 @@ class StyleSphereViewModel @JvmOverloads constructor(
                 context = context,
                 file = file,
                 mimeType = "application/pdf",
-                title = "Share StyleSphere Financial Report (PDF)"
+                title = "Share Business Management Report (PDF)"
             )
         }
     }
@@ -508,7 +515,7 @@ class StyleSphereViewModel @JvmOverloads constructor(
                 context = context,
                 file = file,
                 mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                title = "Share StyleSphere Multi-Sheet Report (Excel)"
+                title = "Share Business Management Report (Excel)"
             )
         }
     }
@@ -521,6 +528,29 @@ class StyleSphereViewModel @JvmOverloads constructor(
             title = title,
             message = message
         )
+    }
+
+    // Reset / Clear all demo and existing records
+    fun clearAllDemoData() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val db = StyleSphereDatabase.getInstance(getApplication())
+                db.transactionDao().deleteAllTransactions()
+                db.orderDao().deleteAllOrders()
+                val currentAccounts = accountRepository.getAllAccounts().first()
+                currentAccounts.forEach { account ->
+                    accountRepository.updateAccount(
+                        account.copy(
+                            openingBalance = 0.0,
+                            currentBalance = 0.0
+                        )
+                    )
+                }
+                _uiMessage.value = "সকল ডেমো হিসাব ও ট্রানজ্যাকশন সফলভাবে মুছে দেওয়া হয়েছে।"
+            } catch (e: Exception) {
+                _uiMessage.value = "ডাটা রিসেট করতে সমস্যা হয়েছে: ${e.message}"
+            }
+        }
     }
 
     companion object {

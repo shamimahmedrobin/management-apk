@@ -13,6 +13,7 @@ enum class OrderStatus(val displayName: String) {
 enum class CourierOption(val displayName: String) {
     PATHAO("Pathao"),
     STEADFAST("Steadfast"),
+    CARRYBEE("CarryBee"),
     REDX("RedX"),
     PAPERFLY("Paperfly"),
     OTHER("Other")

@@ -1,5 +1,7 @@
 package com.example.presentation.dashboard
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -65,7 +67,7 @@ fun DashboardScreen(
                 title = {
                     Column {
                         Text(
-                            text = "StyleSphere Management",
+                            text = "Business Management",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = (-0.5).sp
@@ -261,6 +263,54 @@ fun DashboardScreen(
             }
 
             item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Developed by ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        modifier = Modifier.clickable {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://shamimahmedrobin.vercel.app/")).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "Shamim",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = "Open portfolio",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }

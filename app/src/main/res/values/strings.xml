@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">StyleSphere</string>
-    <string name="app_full_name">StyleSphere Management</string>
+    <string name="app_name">Business Management</string>
+    <string name="app_full_name">Business Management</string>
     <string name="app_subtitle">Business Management &amp; Finance</string>
-    <string name="brand_name">StyleSphere</string>
+    <string name="brand_name">Business Management</string>
 
     <!-- Navigation -->
     <string name="nav_dashboard">Dashboard</string>

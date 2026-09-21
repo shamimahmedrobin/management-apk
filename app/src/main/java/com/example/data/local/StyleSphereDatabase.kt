@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
         CustomerEntity::class,
         SupplierEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class StyleSphereDatabase : RoomDatabase() {
@@ -67,41 +67,6 @@ abstract class StyleSphereDatabase : RoomDatabase() {
                         AccountEntity.fromDomain(it)
                     }
                     database.accountDao().insertAccounts(defaultAccounts)
-                }
-
-                if (database.transactionDao().getCount() == 0) {
-                    val sampleTxs = SampleDataProvider.getSampleTransactions().map {
-                        TransactionEntity.fromDomain(it)
-                    }
-                    database.transactionDao().insertTransactions(sampleTxs)
-                }
-
-                if (database.orderDao().getCount() == 0) {
-                    val sampleOrders = SampleDataProvider.getSampleOrders().map {
-                        OrderEntity.fromDomain(it)
-                    }
-                    database.orderDao().insertOrders(sampleOrders)
-                }
-
-                if (database.productDao().getCount() == 0) {
-                    val sampleProducts = SampleDataProvider.getSampleProducts().map {
-                        ProductEntity.fromDomain(it)
-                    }
-                    database.productDao().insertProducts(sampleProducts)
-                }
-
-                if (database.customerDao().getCount() == 0) {
-                    val sampleCustomers = SampleDataProvider.getSampleCustomers().map {
-                        CustomerEntity.fromDomain(it)
-                    }
-                    database.customerDao().insertCustomers(sampleCustomers)
-                }
-
-                if (database.supplierDao().getCount() == 0) {
-                    val sampleSuppliers = SampleDataProvider.getSampleSuppliers().map {
-                        SupplierEntity.fromDomain(it)
-                    }
-                    database.supplierDao().insertSuppliers(sampleSuppliers)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -100,7 +100,7 @@ object PdfExporter {
 
         // Top Brand Header Bar
         canvas1.drawRect(RectF(30f, y, (pageWidth - 30).toFloat(), y + 60f), bgBoxPaint)
-        canvas1.drawText("StyleSphere Management", 45f, y + 25f, titlePaint)
+        canvas1.drawText("Business Management", 45f, y + 25f, titlePaint)
         canvas1.drawText("Business Financial & Operations Report", 45f, y + 45f, subtitlePaint)
 
         // Metadata right-aligned
@@ -176,7 +176,7 @@ object PdfExporter {
         }
 
         // Footer Page 1
-        canvas1.drawText("StyleSphere Management System • Confidential • Page 1 of 2", 30f, (pageHeight - 30).toFloat(), bodyPaint)
+        canvas1.drawText("Business Management System • Confidential • Page 1 of 2", 30f, (pageHeight - 30).toFloat(), bodyPaint)
         pdfDocument.finishPage(page1)
 
         // --- PAGE 2: Orders, Couriers & Recent Transactions ---
@@ -247,12 +247,12 @@ object PdfExporter {
         }
 
         // Footer Page 2
-        canvas2.drawText("StyleSphere Management System • Confidential • Page 2 of 2", 30f, (pageHeight - 30).toFloat(), bodyPaint)
+        canvas2.drawText("Business Management System • Confidential • Page 2 of 2", 30f, (pageHeight - 30).toFloat(), bodyPaint)
         pdfDocument.finishPage(page2)
 
         // Write to cache file
         val reportsDir = File(context.cacheDir, "reports").apply { mkdirs() }
-        val file = File(reportsDir, "StyleSphere_Report_${System.currentTimeMillis()}.pdf")
+        val file = File(reportsDir, "Business_Management_Report_${System.currentTimeMillis()}.pdf")
         FileOutputStream(file).use { out ->
             pdfDocument.writeTo(out)
         }

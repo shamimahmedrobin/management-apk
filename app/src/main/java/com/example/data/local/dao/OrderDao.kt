@@ -25,6 +25,9 @@ interface OrderDao {
     @Query("DELETE FROM orders WHERE id = :id")
     suspend fun deleteOrderById(id: String)
 
+    @Query("DELETE FROM orders")
+    suspend fun deleteAllOrders()
+
     @Query("SELECT COUNT(*) FROM orders")
     suspend fun getCount(): Int
 }

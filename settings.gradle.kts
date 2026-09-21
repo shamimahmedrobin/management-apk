@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "StyleSphere"
+rootProject.name = "Business Management"
 
 include(":app")

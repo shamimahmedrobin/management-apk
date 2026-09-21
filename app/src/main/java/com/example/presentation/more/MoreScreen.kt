@@ -1,5 +1,7 @@
 package com.example.presentation.more
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -52,6 +54,7 @@ fun MoreScreen(
     val subSectionTitles = listOf("Accounts", "Inventory", "Contacts", "Couriers", "Settings")
 
     var showPinSetupDialog by remember { mutableStateOf(false) }
+    var showResetDataDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -100,7 +103,8 @@ fun MoreScreen(
                     isPinEnabled = isPinEnabled,
                     onSetupPin = { showPinSetupDialog = true },
                     onDisablePin = { SecurityManager.disablePin() },
-                    onLockApp = onLockApp
+                    onLockApp = onLockApp,
+                    onResetData = { showResetDataDialog = true }
                 )
             }
         }
@@ -113,7 +117,7 @@ fun MoreScreen(
                 title = { Text("Set 4-Digit Security PIN") },
                 text = {
                     Column {
-                        Text("Enter a 4-digit PIN to lock StyleSphere Management on app close:")
+                        Text("Enter a 4-digit PIN to lock Business Management on app close:")
                         Spacer(modifier = Modifier.height(12.dp))
                         OutlinedTextField(
                             value = pinInput,
@@ -139,6 +143,32 @@ fun MoreScreen(
                 dismissButton = {
                     TextButton(onClick = { showPinSetupDialog = false }) {
                         Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showResetDataDialog) {
+            AlertDialog(
+                onDismissRequest = { showResetDataDialog = false },
+                title = { Text("সকল হিসাব শূন্য/রিসেট করবেন?") },
+                text = {
+                    Text("সকল ডেমো ও পূর্বের হিসাব, ট্রানজ্যাকশন এবং অর্ডার মুছে ফেলা হবে এবং সকল একাউন্টের ব্যালেন্স ৳ 0 করা হবে। আপনি কি নিশ্চিত?")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.clearAllDemoData()
+                            showResetDataDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("হ্যাঁ, সব মুছে ফেলুন")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = { showResetDataDialog = false }) {
+                        Text("বাতিল")
                     }
                 }
             )
@@ -419,7 +449,8 @@ private fun SettingsView(
     isPinEnabled: Boolean,
     onSetupPin: () -> Unit,
     onDisablePin: () -> Unit,
-    onLockApp: () -> Unit
+    onLockApp: () -> Unit,
+    onResetData: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -437,8 +468,8 @@ private fun SettingsView(
                 border = CardDefaults.outlinedCardBorder()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("StyleSphere E-Commerce", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                    Text("Fashion & Lifestyle Merchant Management System", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Business Management", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    Text("Business Management & Accounts System", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(10.dp))
                     Text("Currency: Bangladeshi Taka (৳ BDT)", style = MaterialTheme.typography.bodyMedium)
                     Text("Date Format: dd MMM yyyy (Dhaka Timezone)", style = MaterialTheme.typography.bodyMedium)
@@ -540,6 +571,40 @@ private fun SettingsView(
             }
         }
 
+        // Reset All Data & Demo Accounts
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)),
+                border = CardDefaults.outlinedCardBorder()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "হিসাব রিসেট ও শূন্যকরণ",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "সকল ডেমো হিসাব, ট্রানজ্যাকশন ও অর্ডার সরিয়ে সম্পূর্ণ নতুন ও শূন্য থেকে শুরু করতে পারেন।",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = onResetData,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.DeleteSweep, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("সকল ডেমো হিসাব মুছে শূন্য করুন")
+                    }
+                }
+            }
+        }
+
         // App Info & Version
         item {
             Card(
@@ -554,21 +619,68 @@ private fun SettingsView(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "StyleSphere Management",
+                        text = "Business Management",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Version 1.0 (Build 1)",
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                        text = "Version 2.0 (Build 2)",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Business Finance & E-Commerce Operations",
+                        text = "Business Management & Financial Operations",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Developed by ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                            modifier = Modifier.clickable {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://shamimahmedrobin.vercel.app/")).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "Shamim",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.OpenInNew,
+                                    contentDescription = "Open portfolio",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

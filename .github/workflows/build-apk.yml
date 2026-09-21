@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build StyleSphere APK
+    name: Build Business Management APK
     runs-on: ubuntu-latest
 
     steps:
@@ -45,6 +45,6 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: StyleSphere-Management-APK
+          name: Business-Management-APK
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 30

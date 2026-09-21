@@ -23,7 +23,7 @@ object ExcelExporter {
         customers: List<Customer>
     ): File {
         val reportsDir = File(context.cacheDir, "reports").apply { mkdirs() }
-        val file = File(reportsDir, "StyleSphere_Report_${System.currentTimeMillis()}.xlsx")
+        val file = File(reportsDir, "Business_Management_Report_${System.currentTimeMillis()}.xlsx")
 
         val sheetNames = listOf(
             "Summary",
@@ -126,7 +126,7 @@ $rowsXml
     private fun buildSummarySheet(summary: FinancialSummary, accounts: List<Account>): String {
         val rows = mutableListOf<String>()
         var r = 1
-        rows.add(buildRow(r++, listOf("StyleSphere Management - Executive Financial Summary")))
+        rows.add(buildRow(r++, listOf("Business Management - Executive Financial Summary")))
         rows.add(buildRow(r++, listOf("Generated", DateUtils.formatDate(System.currentTimeMillis()))))
         rows.add(buildRow(r++, listOf("")))
 
