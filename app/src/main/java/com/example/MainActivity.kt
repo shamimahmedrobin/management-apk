@@ -9,6 +9,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -37,7 +39,7 @@ enum class MainDestination(
     val unselectedIcon: ImageVector
 ) {
     DASHBOARD("Dashboard", Icons.Default.Dashboard, Icons.Outlined.Dashboard),
-    TRANSACTIONS("Transactions", Icons.Default.ReceiptLong, Icons.Outlined.ReceiptLong),
+    TRANSACTIONS("Transactions", Icons.AutoMirrored.Filled.ReceiptLong, Icons.AutoMirrored.Outlined.ReceiptLong),
     ORDERS("Orders", Icons.Default.LocalShipping, Icons.Outlined.LocalShipping),
     REPORTS("Reports", Icons.Default.BarChart, Icons.Outlined.BarChart),
     MORE("More", Icons.Default.MoreHoriz, Icons.Outlined.MoreHoriz)

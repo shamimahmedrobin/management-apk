@@ -35,7 +35,7 @@ android {
         keyPassword = System.getenv("KEY_PASSWORD")
       }
     }
-    create("debugConfig") {
+    getByName("debug") {
       val keystoreFile = file("${rootDir}/debug.keystore")
       val base64File = file("${rootDir}/debug.keystore.base64")
       if (!keystoreFile.exists() && base64File.exists()) {
@@ -63,10 +63,10 @@ android {
       if (releaseKeystore.exists()) {
         signingConfig = signingConfigs.getByName("release")
       } else {
-        signingConfig = signingConfigs.getByName("debugConfig")
+        signingConfig = signingConfigs.getByName("debug")
       }
     }
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
+    debug { signingConfig = signingConfigs.getByName("debug") }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
