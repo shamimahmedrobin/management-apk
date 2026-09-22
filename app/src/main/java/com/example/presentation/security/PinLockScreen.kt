@@ -14,15 +14,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
+import com.example.core.security.BiometricAuthManager
 import com.example.core.security.SecurityManager
 
 @Composable
 fun PinLockScreen(
-    onUnlocked: () -> Unit
+    onUnlocked: () -> Unit,
+    onTriggerBiometric: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     var enteredPin by remember { mutableStateOf("") }
     var hasError by remember { mutableStateOf(false) }
 
@@ -63,7 +68,7 @@ fun PinLockScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Enter 4-Digit Security PIN",
+                    text = "Enter 4-Digit Security PIN or Use Biometric",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -120,16 +125,22 @@ fun PinLockScreen(
                                 "bio" -> {
                                     IconButton(
                                         onClick = {
-                                            SecurityManager.unlockWithBiometric()
-                                            onUnlocked()
+                                            if (context is FragmentActivity) {
+                                                BiometricAuthManager.promptBiometric(
+                                                    activity = context,
+                                                    onSuccess = onUnlocked
+                                                )
+                                            } else {
+                                                onTriggerBiometric()
+                                            }
                                         },
                                         modifier = Modifier.size(64.dp)
                                     ) {
                                         Icon(
                                             Icons.Default.Fingerprint,
-                                            contentDescription = "Biometric Unlock",
+                                            contentDescription = "Biometric Unlock (Fingerprint / Face ID)",
                                             tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(32.dp)
+                                            modifier = Modifier.size(36.dp)
                                         )
                                     }
                                 }

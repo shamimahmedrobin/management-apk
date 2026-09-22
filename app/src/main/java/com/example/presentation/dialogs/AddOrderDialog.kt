@@ -18,6 +18,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.core.utils.CurrencyFormatter
 import com.example.domain.model.CourierOption
 import com.example.domain.model.PaymentMethod
+import com.example.presentation.common.TransactionDatePickerField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +35,9 @@ fun AddOrderDialog(
         deliveryCharge: Double,
         courier: CourierOption,
         paymentMethod: PaymentMethod,
-        notes: String
+        notes: String,
+        trackingCode: String,
+        orderDateMillis: Long
     ) -> Unit
 ) {
     var customerName by remember { mutableStateOf("") }
@@ -46,8 +49,10 @@ fun AddOrderDialog(
     var sellingPriceText by remember { mutableStateOf("") }
     var deliveryChargeText by remember { mutableStateOf("80") }
     var selectedCourier by remember { mutableStateOf(CourierOption.STEADFAST) }
+    var consignmentTrackingCode by remember { mutableStateOf("") }
     var selectedPaymentMethod by remember { mutableStateOf(PaymentMethod.COD) }
     var notesText by remember { mutableStateOf("") }
+    var selectedOrderDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
 
     var courierExpanded by remember { mutableStateOf(false) }
     var paymentExpanded by remember { mutableStateOf(false) }
@@ -99,6 +104,15 @@ fun AddOrderDialog(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                 }
+
+                // Order Date Picker (তারিখ নির্বাচন)
+                TransactionDatePickerField(
+                    selectedDateMillis = selectedOrderDateMillis,
+                    onDateSelected = { selectedOrderDateMillis = it },
+                    label = "Order Date (অর্ডারের তারিখ)"
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Customer Name
                 OutlinedTextField(
@@ -229,6 +243,19 @@ fun AddOrderDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // Consignment / Tracking ID Input
+                OutlinedTextField(
+                    value = consignmentTrackingCode,
+                    onValueChange = { consignmentTrackingCode = it },
+                    label = { Text("Consignment / Tracking ID (Optional)") },
+                    placeholder = { Text("e.g. 240922-001 or CN12345") },
+                    singleLine = true,
+                    supportingText = { Text("Auto-generated if kept empty") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 // Payment Method Dropdown
                 ExposedDropdownMenuBox(
                     expanded = paymentExpanded,
@@ -317,7 +344,9 @@ fun AddOrderDialog(
                                 delivery,
                                 selectedCourier,
                                 selectedPaymentMethod,
-                                notesText.trim()
+                                notesText.trim(),
+                                consignmentTrackingCode.trim(),
+                                selectedOrderDateMillis
                             )
                             onDismiss()
                         }

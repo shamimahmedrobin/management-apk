@@ -7,6 +7,7 @@ enum class TransactionType {
 }
 
 enum class IncomeCategory(val displayName: String) {
+    CAPITAL("Capital (মূলধন)"),
     PRODUCT_SALE("Product Sale"),
     COURIER_COLLECTION("Courier Collection"),
     BKASH("bKash"),

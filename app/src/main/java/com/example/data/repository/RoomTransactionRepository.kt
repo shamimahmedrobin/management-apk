@@ -26,6 +26,15 @@ class RoomTransactionRepository(
         }
     }
 
+    override suspend fun updateTransaction(transaction: Transaction): Result<Unit> {
+        return try {
+            transactionDao.insertTransaction(TransactionEntity.fromDomain(transaction))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun deleteTransaction(id: String): Result<Unit> {
         return try {
             transactionDao.deleteTransactionById(id)

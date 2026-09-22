@@ -15,10 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.core.utils.DateUtils
 import com.example.domain.model.ReportPeriod
 import com.example.domain.model.Transaction
 import com.example.presentation.common.EmptyState
 import com.example.presentation.common.TransactionItemRow
+import com.example.presentation.dialogs.EditTransactionDialog
 import com.example.presentation.dialogs.TransactionDetailDialog
 import com.example.presentation.viewmodel.StyleSphereViewModel
 
@@ -38,12 +40,34 @@ fun TransactionsScreen(
     val accountFilter by viewModel.txAccountFilter.collectAsState()
 
     var selectedTransactionForDetail by remember { mutableStateOf<Transaction?>(null) }
+    var transactionToEdit by remember { mutableStateOf<Transaction?>(null) }
     var showFilterSheet by remember { mutableStateOf(false) }
 
     if (selectedTransactionForDetail != null) {
+        val tx = selectedTransactionForDetail!!
         TransactionDetailDialog(
-            transaction = selectedTransactionForDetail!!,
-            onDismiss = { selectedTransactionForDetail = null }
+            transaction = tx,
+            onDismiss = { selectedTransactionForDetail = null },
+            onEditClick = {
+                transactionToEdit = tx
+                selectedTransactionForDetail = null
+            },
+            onDeleteClick = {
+                viewModel.deleteTransaction(tx.id)
+                selectedTransactionForDetail = null
+            }
+        )
+    }
+
+    if (transactionToEdit != null) {
+        EditTransactionDialog(
+            transaction = transactionToEdit!!,
+            accounts = accounts,
+            onDismiss = { transactionToEdit = null },
+            onSave = { updatedTx ->
+                viewModel.updateExistingTransaction(updatedTx)
+                transactionToEdit = null
+            }
         )
     }
 
@@ -170,16 +194,52 @@ fun TransactionsScreen(
                     message = "Try changing search keywords or adjusting your period/category filters"
                 )
             } else {
+                // Group transactions by formatted date string while maintaining descending order (newest first, older below)
+                val groupedByDate = remember(txList) {
+                    txList.groupBy { DateUtils.formatDate(it.dateMillis) }
+                }
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(txList, key = { it.id }) { tx ->
-                        TransactionItemRow(
-                            transaction = tx,
-                            onClick = { selectedTransactionForDetail = tx }
-                        )
+                    groupedByDate.forEach { (dateHeader, transactionsInDate) ->
+                        item(key = "header_$dateHeader") {
+                            val isToday = DateUtils.formatDate(System.currentTimeMillis()) == dateHeader
+                            val headerLabel = if (isToday) "Today ($dateHeader)" else dateHeader
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp, bottom = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (isToday) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                ) {
+                                    Text(
+                                        text = headerLabel,
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = if (isToday) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                    )
+                                }
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
+
+                        items(transactionsInDate, key = { it.id }) { tx ->
+                            TransactionItemRow(
+                                transaction = tx,
+                                onClick = { selectedTransactionForDetail = tx }
+                            )
+                        }
                     }
                     item {
                         Spacer(modifier = Modifier.height(72.dp))

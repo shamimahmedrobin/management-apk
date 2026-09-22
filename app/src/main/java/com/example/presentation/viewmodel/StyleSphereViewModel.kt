@@ -218,7 +218,11 @@ class StyleSphereViewModel @JvmOverloads constructor(
             }
         }
 
-        result
+        // Always ensure newest dates appear first at the top, older dates below
+        result.sortedWith(
+            compareByDescending<Transaction> { it.dateMillis }
+                .thenByDescending { it.createdAtMillis }
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Orders Screen Filters
@@ -249,7 +253,11 @@ class StyleSphereViewModel @JvmOverloads constructor(
                         it.trackingCode.lowercase().contains(q)
             }
         }
-        result
+        // Always ensure newest orders appear first at the top, older orders below
+        result.sortedWith(
+            compareByDescending<Order> { it.orderDateMillis }
+                .thenByDescending { it.id }
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // User Action: Add Income
@@ -372,6 +380,21 @@ class StyleSphereViewModel @JvmOverloads constructor(
         return Result.success(Unit)
     }
 
+    // User Action: Update Existing Transaction
+    fun updateExistingTransaction(updatedTx: Transaction): Result<Unit> {
+        if (updatedTx.amount <= 0) return Result.failure(IllegalArgumentException("Amount must be greater than 0"))
+        if (updatedTx.accountId.isBlank()) return Result.failure(IllegalArgumentException("Account is required"))
+
+        viewModelScope.launch {
+            transactionRepository.updateTransaction(updatedTx)
+            val updatedTxs = transactions.value.map {
+                if (it.id == updatedTx.id) updatedTx else it
+            }
+            accountRepository.updateBalances(updatedTxs)
+        }
+        return Result.success(Unit)
+    }
+
     // User Action: Delete Transaction
     fun deleteTransaction(transactionId: String) {
         viewModelScope.launch {
@@ -393,13 +416,17 @@ class StyleSphereViewModel @JvmOverloads constructor(
         deliveryCharge: Double,
         courier: CourierOption,
         paymentMethod: PaymentMethod,
-        notes: String
+        notes: String,
+        trackingCode: String = "",
+        orderDateMillis: Long = System.currentTimeMillis()
     ): Result<Unit> {
         if (customerName.isBlank()) return Result.failure(IllegalArgumentException("Customer name is required"))
         if (phoneNumber.isBlank()) return Result.failure(IllegalArgumentException("Phone number is required"))
         if (productName.isBlank()) return Result.failure(IllegalArgumentException("Product name is required"))
         if (quantity <= 0) return Result.failure(IllegalArgumentException("Quantity must be at least 1"))
         if (sellingPrice <= 0) return Result.failure(IllegalArgumentException("Selling price must be greater than 0"))
+
+        val finalTracking = if (trackingCode.isNotBlank()) trackingCode.trim() else "${courier.name.take(3)}-${(10000..99999).random()}"
 
         val newOrder = Order(
             id = "ORD-${8800 + (orders.value.size + 1)}",
@@ -413,10 +440,10 @@ class StyleSphereViewModel @JvmOverloads constructor(
             deliveryCharge = deliveryCharge,
             courier = courier,
             paymentMethod = paymentMethod,
-            orderDateMillis = System.currentTimeMillis(),
+            orderDateMillis = orderDateMillis,
             status = OrderStatus.PENDING,
-            deliveryStatus = "Pending Verification",
-            trackingCode = "${courier.name.take(3)}-${(10000..99999).random()}",
+            deliveryStatus = "In Transit",
+            trackingCode = finalTracking,
             notes = notes
         )
 
@@ -424,6 +451,30 @@ class StyleSphereViewModel @JvmOverloads constructor(
             orderRepository.addOrder(newOrder)
         }
         return Result.success(Unit)
+    }
+
+    // User Action: Update Order Status & Consignment/Tracking Details
+    fun updateOrderTracking(orderId: String, trackingCode: String, newStatus: OrderStatus, courier: CourierOption) {
+        viewModelScope.launch {
+            val order = orderRepository.getOrderById(orderId)
+            if (order != null) {
+                val updated = order.copy(
+                    trackingCode = trackingCode.trim(),
+                    status = newStatus,
+                    courier = courier,
+                    deliveryStatus = when (newStatus) {
+                        OrderStatus.PENDING -> "Pending Verification"
+                        OrderStatus.CONFIRMED -> "Confirmed & In Queue"
+                        OrderStatus.PROCESSING -> "Packaging in Progress"
+                        OrderStatus.SHIPPED -> "Shipped (In Transit)"
+                        OrderStatus.DELIVERED -> "Delivered"
+                        OrderStatus.CANCELLED -> "Cancelled"
+                        OrderStatus.RETURNED -> "Returned"
+                    }
+                )
+                orderRepository.updateOrder(updated)
+            }
+        }
     }
 
     // User Action: Update Order Status

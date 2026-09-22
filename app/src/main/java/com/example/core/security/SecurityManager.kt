@@ -12,11 +12,15 @@ object SecurityManager {
     private const val PREFS_NAME = "stylesphere_security_prefs"
     private const val KEY_PIN_ENABLED = "key_pin_enabled"
     private const val KEY_PIN_CODE = "key_pin_code"
+    private const val KEY_BIOMETRIC_ENABLED = "key_biometric_enabled"
 
     private var prefs: SharedPreferences? = null
 
     private val _isPinEnabled = MutableStateFlow(false)
     val isPinEnabled: StateFlow<Boolean> = _isPinEnabled.asStateFlow()
+
+    private val _isBiometricEnabled = MutableStateFlow(true)
+    val isBiometricEnabled: StateFlow<Boolean> = _isBiometricEnabled.asStateFlow()
 
     private val _isAppLocked = MutableStateFlow(false)
     val isAppLocked: StateFlow<Boolean> = _isAppLocked.asStateFlow()
@@ -27,9 +31,11 @@ object SecurityManager {
         if (prefs == null) {
             prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val enabled = prefs?.getBoolean(KEY_PIN_ENABLED, false) ?: false
+            val biometricEnabled = prefs?.getBoolean(KEY_BIOMETRIC_ENABLED, true) ?: true
             val savedPin = prefs?.getString(KEY_PIN_CODE, "1234") ?: "1234"
             currentPin = savedPin
             _isPinEnabled.value = enabled
+            _isBiometricEnabled.value = biometricEnabled
             if (enabled) {
                 _isAppLocked.value = true
             }
@@ -53,6 +59,14 @@ object SecurityManager {
         val p = prefs ?: context?.applicationContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         p?.edit {
             putBoolean(KEY_PIN_ENABLED, false)
+        }
+    }
+
+    fun setBiometricEnabled(enabled: Boolean, context: Context? = null) {
+        _isBiometricEnabled.value = enabled
+        val p = prefs ?: context?.applicationContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        p?.edit {
+            putBoolean(KEY_BIOMETRIC_ENABLED, enabled)
         }
     }
 

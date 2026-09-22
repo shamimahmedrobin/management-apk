@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.utils.CurrencyFormatter
+import com.example.core.utils.DateUtils
 import com.example.domain.model.AccountType
 import com.example.domain.model.Transaction
 import com.example.domain.model.TransactionType
@@ -277,6 +278,12 @@ fun TransactionItemRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${DateUtils.formatDate(transaction.dateMillis)} • ${transaction.timeString}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline
                 )
             }
 

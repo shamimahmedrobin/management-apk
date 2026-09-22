@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -14,12 +15,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.core.utils.CourierTracker
 import com.example.core.utils.CurrencyFormatter
 import com.example.core.utils.DateUtils
+import com.example.domain.model.CourierOption
 import com.example.domain.model.Order
 import com.example.domain.model.OrderStatus
 import com.example.presentation.common.EmptyState
@@ -39,6 +43,7 @@ fun OrdersScreen(
     val searchQuery by viewModel.orderSearchQuery.collectAsState()
 
     var selectedOrderForDetail by remember { mutableStateOf<Order?>(null) }
+    var showQuickTrackDialog by remember { mutableStateOf(false) }
 
     // Quick metrics
     val totalCount = allOrders.size
@@ -46,12 +51,27 @@ fun OrdersScreen(
     val pendingCount = allOrders.count { it.status == OrderStatus.PENDING || it.status == OrderStatus.PROCESSING || it.status == OrderStatus.SHIPPED }
     val returnedCount = allOrders.count { it.status == OrderStatus.RETURNED || it.status == OrderStatus.CANCELLED }
 
+    if (showQuickTrackDialog) {
+        QuickTrackDialog(
+            onDismiss = { showQuickTrackDialog = false }
+        )
+    }
+
     if (selectedOrderForDetail != null) {
         OrderDetailDialog(
             order = selectedOrderForDetail!!,
             onDismiss = { selectedOrderForDetail = null },
-            onStatusChange = { newStatus ->
-                viewModel.updateOrderStatus(selectedOrderForDetail!!.id, newStatus)
+            onUpdateOrder = { updatedTracking, newStatus, courier ->
+                viewModel.updateOrderTracking(
+                    orderId = selectedOrderForDetail!!.id,
+                    trackingCode = updatedTracking,
+                    newStatus = newStatus,
+                    courier = courier
+                )
+                selectedOrderForDetail = null
+            },
+            onDeleteOrder = {
+                viewModel.deleteOrder(selectedOrderForDetail!!.id)
                 selectedOrderForDetail = null
             }
         )
@@ -65,6 +85,15 @@ fun OrdersScreen(
                         text = "Orders & Deliveries",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
+                },
+                actions = {
+                    IconButton(onClick = { showQuickTrackDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.LocalShipping,
+                            contentDescription = "Track Consignment",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             )
         },
@@ -174,16 +203,52 @@ fun OrdersScreen(
                     message = "Tap 'New Order' to record customer parcels"
                 )
             } else {
+                // Group orders by formatted date while keeping descending order
+                val groupedOrdersByDate = remember(orders) {
+                    orders.groupBy { DateUtils.formatDate(it.orderDateMillis) }
+                }
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(orders, key = { it.id }) { order ->
-                        OrderItemCard(
-                            order = order,
-                            onClick = { selectedOrderForDetail = order }
-                        )
+                    groupedOrdersByDate.forEach { (dateHeader, ordersInDate) ->
+                        item(key = "header_order_$dateHeader") {
+                            val isToday = DateUtils.formatDate(System.currentTimeMillis()) == dateHeader
+                            val headerLabel = if (isToday) "Today ($dateHeader)" else dateHeader
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp, bottom = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (isToday) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                ) {
+                                    Text(
+                                        text = headerLabel,
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = if (isToday) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                    )
+                                }
+                                HorizontalDivider(
+                                    modifier = Modifier.weight(1f),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
+
+                        items(ordersInDate, key = { it.id }) { order ->
+                            OrderItemCard(
+                                order = order,
+                                onClick = { selectedOrderForDetail = order }
+                            )
+                        }
                     }
                     item {
                         Spacer(modifier = Modifier.height(72.dp))
@@ -265,14 +330,14 @@ private fun OrderItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "${order.productName} (x${order.quantity})",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Courier: ${order.courier.displayName} (${order.trackingCode})",
+                        text = "Courier: ${order.courier.displayName}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -290,6 +355,69 @@ private fun OrderItemCard(
                     )
                 }
             }
+
+            // Courier Consignment / Tracking Banner & Action
+            if (order.trackingCode.isNotBlank()) {
+                val context = LocalContext.current
+                val trackingUrl = CourierTracker.getTrackingUrl(order.courier, order.trackingCode)
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocalShipping,
+                                contentDescription = "Tracking",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Consignment: ${order.trackingCode}",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        if (trackingUrl != null) {
+                            FilledTonalButton(
+                                onClick = {
+                                    CourierTracker.openTrackingWebsite(
+                                        context = context,
+                                        courier = order.courier,
+                                        trackingCode = order.trackingCode
+                                    )
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.OpenInNew,
+                                    contentDescription = "Track",
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Track", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -299,9 +427,16 @@ private fun OrderItemCard(
 private fun OrderDetailDialog(
     order: Order,
     onDismiss: () -> Unit,
-    onStatusChange: (OrderStatus) -> Unit
+    onUpdateOrder: (updatedTracking: String, newStatus: OrderStatus, courier: CourierOption) -> Unit,
+    onDeleteOrder: () -> Unit
 ) {
+    val context = LocalContext.current
+    var selectedStatus by remember { mutableStateOf(order.status) }
+    var selectedCourier by remember { mutableStateOf(order.courier) }
+    var trackingCodeInput by remember { mutableStateOf(order.trackingCode) }
+
     var statusDropdownExpanded by remember { mutableStateOf(false) }
+    var courierDropdownExpanded by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -312,7 +447,9 @@ private fun OrderDetailDialog(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
-                modifier = Modifier.padding(20.dp)
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -320,7 +457,7 @@ private fun OrderDetailDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Order Details",
+                        text = "Order & Delivery Details",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                     IconButton(onClick = onDismiss) {
@@ -337,6 +474,25 @@ private fun OrderDetailDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Order ID & Date:", style = MaterialTheme.typography.bodySmall)
+                            Text("${order.id} • ${DateUtils.formatDate(order.orderDateMillis)}", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Customer:", style = MaterialTheme.typography.bodySmall)
+                            Text(order.customerName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Phone:", style = MaterialTheme.typography.bodySmall)
+                            Text(order.phoneNumber, style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (order.deliveryAddress.isNotBlank()) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Address:", style = MaterialTheme.typography.bodySmall)
+                                Text(order.deliveryAddress, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Selling Price:", style = MaterialTheme.typography.bodySmall)
                             Text(CurrencyFormatter.formatBDT(order.sellingPrice), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
@@ -364,15 +520,104 @@ private fun OrderDetailDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                Text("Update Order Status:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                Spacer(modifier = Modifier.height(6.dp))
+                // Courier selection
+                Text("Assigned Courier:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                Spacer(modifier = Modifier.height(4.dp))
+                ExposedDropdownMenuBox(
+                    expanded = courierDropdownExpanded,
+                    onExpandedChange = { courierDropdownExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCourier.displayName,
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = courierDropdownExpanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = courierDropdownExpanded,
+                        onDismissRequest = { courierDropdownExpanded = false }
+                    ) {
+                        CourierOption.values().forEach { c ->
+                            DropdownMenuItem(
+                                text = { Text(c.displayName) },
+                                onClick = {
+                                    selectedCourier = c
+                                    courierDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
 
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Consignment / Tracking Code Input
+                Text("Consignment / Tracking Code:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = trackingCodeInput,
+                    onValueChange = { trackingCodeInput = it },
+                    placeholder = { Text("e.g. 240922-001") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        val trackingUrl = CourierTracker.getTrackingUrl(selectedCourier, trackingCodeInput)
+                        if (trackingUrl != null) {
+                            IconButton(onClick = {
+                                CourierTracker.openTrackingWebsite(
+                                    context = context,
+                                    courier = selectedCourier,
+                                    trackingCode = trackingCodeInput
+                                )
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.OpenInNew,
+                                    contentDescription = "Track Online",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                )
+
+                // Direct Tracking Button if available
+                val trackingUrl = CourierTracker.getTrackingUrl(selectedCourier, trackingCodeInput)
+                if (trackingUrl != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FilledTonalButton(
+                        onClick = {
+                            CourierTracker.openTrackingWebsite(
+                                context = context,
+                                courier = selectedCourier,
+                                trackingCode = trackingCodeInput
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalShipping,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Open ${selectedCourier.displayName} Tracking")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Order Status Selection
+                Text("Delivery Status:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                Spacer(modifier = Modifier.height(4.dp))
                 ExposedDropdownMenuBox(
                     expanded = statusDropdownExpanded,
                     onExpandedChange = { statusDropdownExpanded = it }
                 ) {
                     OutlinedTextField(
-                        value = order.status.displayName,
+                        value = selectedStatus.displayName,
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusDropdownExpanded) },
@@ -388,7 +633,7 @@ private fun OrderDetailDialog(
                             DropdownMenuItem(
                                 text = { Text(st.displayName) },
                                 onClick = {
-                                    onStatusChange(st)
+                                    selectedStatus = st
                                     statusDropdownExpanded = false
                                 }
                             )
@@ -398,7 +643,179 @@ private fun OrderDetailDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
+                // Save Changes & Delete Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = onDeleteOrder,
+                        colors = ButtonDefaults.textButtonColors(contentColor = ExpenseRed)
+                    ) {
+                        Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Delete")
+                    }
+
+                    Row {
+                        OutlinedButton(onClick = onDismiss) {
+                            Text("Cancel")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                onUpdateOrder(trackingCodeInput, selectedStatus, selectedCourier)
+                            }
+                        ) {
+                            Text("Save")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun QuickTrackDialog(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    var selectedCourier by remember { mutableStateOf(CourierOption.STEADFAST) }
+    var consignmentId by remember { mutableStateOf("") }
+    var courierDropdownExpanded by remember { mutableStateOf(false) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocalShipping,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Courier Tracking",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Track any Steadfast, Pathao, or CarryBee consignment parcel online directly.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Courier Selector
+                Text("Select Courier Service:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                Spacer(modifier = Modifier.height(4.dp))
+                ExposedDropdownMenuBox(
+                    expanded = courierDropdownExpanded,
+                    onExpandedChange = { courierDropdownExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCourier.displayName,
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = courierDropdownExpanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = courierDropdownExpanded,
+                        onDismissRequest = { courierDropdownExpanded = false }
+                    ) {
+                        listOf(
+                            CourierOption.STEADFAST,
+                            CourierOption.PATHAO,
+                            CourierOption.CARRYBEE,
+                            CourierOption.REDX,
+                            CourierOption.PAPERFLY
+                        ).forEach { c ->
+                            DropdownMenuItem(
+                                text = { Text(c.displayName) },
+                                onClick = {
+                                    selectedCourier = c
+                                    courierDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Consignment / Tracking ID Input
+                Text("Consignment / Tracking ID:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = consignmentId,
+                    onValueChange = { consignmentId = it },
+                    placeholder = {
+                        Text(
+                            when (selectedCourier) {
+                                CourierOption.STEADFAST -> "e.g. 240922-001 or SF..."
+                                CourierOption.PATHAO -> "e.g. CN12345 or PT..."
+                                CourierOption.CARRYBEE -> "e.g. CB98765"
+                                else -> "Tracking ID"
+                            }
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Track Online Button
                 Button(
+                    onClick = {
+                        if (consignmentId.isNotBlank()) {
+                            CourierTracker.openTrackingWebsite(
+                                context = context,
+                                courier = selectedCourier,
+                                trackingCode = consignmentId
+                            )
+                        }
+                    },
+                    enabled = consignmentId.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Check Delivery Status Online")
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth()
                 ) {

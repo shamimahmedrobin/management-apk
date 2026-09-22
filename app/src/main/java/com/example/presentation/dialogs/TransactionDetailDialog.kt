@@ -6,6 +6,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,7 +26,9 @@ import com.example.ui.theme.TransferBlue
 @Composable
 fun TransactionDetailDialog(
     transaction: Transaction,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onEditClick: (() -> Unit)? = null,
+    onDeleteClick: (() -> Unit)? = null
 ) {
     val (typeColor, prefix) = when (transaction.type) {
         TransactionType.INCOME -> Pair(ProfitGreen, "+")
@@ -118,11 +122,48 @@ fun TransactionDetailDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("Close")
+                    if (onEditClick != null) {
+                        Button(
+                            onClick = onEditClick,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Edit (এডিট)")
+                        }
+                    }
+
+                    if (onDeleteClick != null) {
+                        OutlinedButton(
+                            onClick = onDeleteClick,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Delete")
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = if (onEditClick == null) Modifier.fillMaxWidth() else Modifier
+                    ) {
+                        Text("Close")
+                    }
                 }
             }
         }

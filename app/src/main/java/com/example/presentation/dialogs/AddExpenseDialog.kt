@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.domain.model.Account
 import com.example.domain.model.ExpenseCategory
+import com.example.presentation.common.TransactionDatePickerField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +32,8 @@ fun AddExpenseDialog(
         description: String,
         reference: String,
         notes: String,
-        receiptUri: String?
+        receiptUri: String?,
+        dateMillis: Long
     ) -> Unit
 ) {
     var amountText by remember { mutableStateOf("") }
@@ -41,6 +43,7 @@ fun AddExpenseDialog(
     var referenceText by remember { mutableStateOf("") }
     var notesText by remember { mutableStateOf("") }
     var attachedReceiptName by remember { mutableStateOf<String?>(null) }
+    var selectedDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
 
     var categoryDropdownExpanded by remember { mutableStateOf(false) }
     var accountDropdownExpanded by remember { mutableStateOf(false) }
@@ -93,6 +96,15 @@ fun AddExpenseDialog(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                 }
+
+                // Date Picker (তারিখ নির্বাচন)
+                TransactionDatePickerField(
+                    selectedDateMillis = selectedDateMillis,
+                    onDateSelected = { selectedDateMillis = it },
+                    label = "Expense Date (তারিখ)"
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Amount
                 OutlinedTextField(
@@ -273,7 +285,8 @@ fun AddExpenseDialog(
                                 descriptionText.trim(),
                                 referenceText.trim(),
                                 notesText.trim(),
-                                attachedReceiptName
+                                attachedReceiptName,
+                                selectedDateMillis
                             )
                             onDismiss()
                         },

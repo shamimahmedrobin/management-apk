@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.core.utils.CurrencyFormatter
 import com.example.domain.model.Account
+import com.example.presentation.common.TransactionDatePickerField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,7 +29,8 @@ fun AddTransferDialog(
         destinationAccountId: String,
         amount: Double,
         reference: String,
-        notes: String
+        notes: String,
+        dateMillis: Long
     ) -> Unit
 ) {
     var sourceAccountId by remember {
@@ -41,6 +43,7 @@ fun AddTransferDialog(
     var amountText by remember { mutableStateOf("") }
     var referenceText by remember { mutableStateOf("") }
     var notesText by remember { mutableStateOf("") }
+    var selectedDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
 
     var sourceExpanded by remember { mutableStateOf(false) }
     var destExpanded by remember { mutableStateOf(false) }
@@ -119,6 +122,15 @@ fun AddTransferDialog(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                 }
+
+                // Date Picker (তারিখ নির্বাচন)
+                TransactionDatePickerField(
+                    selectedDateMillis = selectedDateMillis,
+                    onDateSelected = { selectedDateMillis = it },
+                    label = "Transfer Date (তারিখ)"
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Source Account Dropdown
                 ExposedDropdownMenuBox(
@@ -251,7 +263,8 @@ fun AddTransferDialog(
                                 destinationAccountId,
                                 amt,
                                 referenceText.trim(),
-                                notesText.trim()
+                                notesText.trim(),
+                                selectedDateMillis
                             )
                             onDismiss()
                         }

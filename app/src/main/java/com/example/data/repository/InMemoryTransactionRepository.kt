@@ -25,6 +25,13 @@ class InMemoryTransactionRepository : TransactionRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun updateTransaction(transaction: Transaction): Result<Unit> {
+        _transactions.value = _transactions.value.map {
+            if (it.id == transaction.id) transaction else it
+        }
+        return Result.success(Unit)
+    }
+
     override suspend fun deleteTransaction(id: String): Result<Unit> {
         _transactions.value = _transactions.value.filterNot { it.id == id }
         return Result.success(Unit)

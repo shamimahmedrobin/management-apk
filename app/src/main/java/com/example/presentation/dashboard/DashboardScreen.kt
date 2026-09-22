@@ -30,6 +30,7 @@ import com.example.domain.model.Account
 import com.example.domain.model.FinancialSummary
 import com.example.domain.model.Transaction
 import com.example.presentation.common.*
+import com.example.presentation.dialogs.EditTransactionDialog
 import com.example.presentation.dialogs.TransactionDetailDialog
 import com.example.presentation.viewmodel.StyleSphereViewModel
 import com.example.ui.theme.*
@@ -40,7 +41,8 @@ fun DashboardScreen(
     viewModel: StyleSphereViewModel,
     onNavigateToTransactions: () -> Unit,
     onNavigateToOrders: () -> Unit,
-    onNavigateToMore: () -> Unit,
+    onNavigateToMore: () -> Unit = {},
+    onNavigateToSettings: () -> Unit,
     onAddIncomeClick: () -> Unit,
     onAddExpenseClick: () -> Unit,
     onAddTransferClick: () -> Unit,
@@ -53,11 +55,33 @@ fun DashboardScreen(
     val chartPeriod by viewModel.dashboardChartPeriod.collectAsState()
 
     var selectedTransactionForDetail by remember { mutableStateOf<Transaction?>(null) }
+    var transactionToEdit by remember { mutableStateOf<Transaction?>(null) }
 
     if (selectedTransactionForDetail != null) {
+        val tx = selectedTransactionForDetail!!
         TransactionDetailDialog(
-            transaction = selectedTransactionForDetail!!,
-            onDismiss = { selectedTransactionForDetail = null }
+            transaction = tx,
+            onDismiss = { selectedTransactionForDetail = null },
+            onEditClick = {
+                transactionToEdit = tx
+                selectedTransactionForDetail = null
+            },
+            onDeleteClick = {
+                viewModel.deleteTransaction(tx.id)
+                selectedTransactionForDetail = null
+            }
+        )
+    }
+
+    if (transactionToEdit != null) {
+        EditTransactionDialog(
+            transaction = transactionToEdit!!,
+            accounts = accounts,
+            onDismiss = { transactionToEdit = null },
+            onSave = { updatedTx ->
+                viewModel.updateExistingTransaction(updatedTx)
+                transactionToEdit = null
+            }
         )
     }
 
@@ -82,21 +106,12 @@ fun DashboardScreen(
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            viewModel.sendReminderAlert(
-                                context = context,
-                                title = "Daily Accounts Reminder",
-                                message = "Don't forget to reconcile today's bKash and Courier COD collections!"
-                            )
-                        }
-                    ) {
-                        Badge(containerColor = WarningAmber) {
-                            Icon(Icons.Outlined.Notifications, contentDescription = "Notifications")
-                        }
-                    }
-                    IconButton(onClick = onNavigateToMore) {
-                        Icon(Icons.Outlined.Tune, contentDescription = "Settings & Accounts")
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

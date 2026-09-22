@@ -19,6 +19,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.core.utils.DateUtils
 import com.example.domain.model.Account
 import com.example.domain.model.IncomeCategory
+import com.example.presentation.common.TransactionDatePickerField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,16 +33,18 @@ fun AddIncomeDialog(
         reference: String,
         orderId: String?,
         customerName: String?,
-        notes: String
+        notes: String,
+        dateMillis: Long
     ) -> Unit
 ) {
     var amountText by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(IncomeCategory.PRODUCT_SALE.displayName) }
+    var selectedCategory by remember { mutableStateOf(IncomeCategory.CAPITAL.displayName) }
     var selectedAccountId by remember { mutableStateOf(accounts.firstOrNull()?.id ?: "acc_cash") }
     var referenceText by remember { mutableStateOf("") }
     var orderIdText by remember { mutableStateOf("") }
     var customerNameText by remember { mutableStateOf("") }
     var notesText by remember { mutableStateOf("") }
+    var selectedDateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
 
     var categoryDropdownExpanded by remember { mutableStateOf(false) }
     var accountDropdownExpanded by remember { mutableStateOf(false) }
@@ -94,6 +97,15 @@ fun AddIncomeDialog(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                 }
+
+                // Date Picker (তারিখ নির্বাচন)
+                TransactionDatePickerField(
+                    selectedDateMillis = selectedDateMillis,
+                    onDateSelected = { selectedDateMillis = it },
+                    label = "Transaction Date (তারিখ)"
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Amount
                 OutlinedTextField(
@@ -248,7 +260,8 @@ fun AddIncomeDialog(
                                 referenceText.trim(),
                                 orderIdText.trim().ifBlank { null },
                                 customerNameText.trim().ifBlank { null },
-                                notesText.trim()
+                                notesText.trim(),
+                                selectedDateMillis
                             )
                             onDismiss()
                         }
